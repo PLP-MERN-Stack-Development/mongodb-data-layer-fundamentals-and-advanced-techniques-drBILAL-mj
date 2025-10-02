@@ -1,14 +1,9 @@
-// insert_books.js - Script to populate MongoDB with sample book data
+// // insert_books.js - Script to populate MongoDB with sample book data
 
-// Import MongoDB client
-const { MongoClient } = require('mongodb');
+require('dotenv').config();
+const { connectDB, mongoose } = require('./queries');
+const { Books } = require('./queries'); // Import the model
 
-// Connection URI (replace with your MongoDB connection string if using Atlas)
-const uri = 'mongodb://localhost:27017';
-
-// Database and collection names
-const dbName = 'plp_bookstore';
-const collectionName = 'books';
 
 // Sample book data
 const books = [
@@ -134,43 +129,34 @@ const books = [
   }
 ];
 
-// Function to insert books into MongoDB
+
 async function insertBooks() {
-  const client = new MongoClient(uri);
-
   try {
-    // Connect to the MongoDB server
-    await client.connect();
-    console.log('Connected to MongoDB server');
-
-    // Get database and collection
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
+    await connectDB(); // Connect to MongoDB Atlas
 
     // Check if collection already has documents
-    const count = await collection.countDocuments();
+    const count = await Books.countDocuments();
     if (count > 0) {
       console.log(`Collection already contains ${count} documents. Dropping collection...`);
-      await collection.drop();
+      await Books.collection.drop();
       console.log('Collection dropped successfully');
     }
 
-    // Insert the books
-    const result = await collection.insertMany(books);
-    console.log(`${result.insertedCount} books were successfully inserted into the database`);
+    // Insert the books using the Mongoose model
+    const result = await Books.insertMany(books);
+    console.log(`${result.length} books were successfully inserted into the database`);
 
     // Display the inserted books
     console.log('\nInserted books:');
-    const insertedBooks = await collection.find({}).toArray();
-    insertedBooks.forEach((book, index) => {
+    result.forEach((book, index) => {
       console.log(`${index + 1}. "${book.title}" by ${book.author} (${book.published_year})`);
     });
 
   } catch (err) {
     console.error('Error occurred:', err);
   } finally {
-    // Close the connection
-    await client.close();
+    // Close the Mongoose connection
+    await mongoose.connection.close();
     console.log('Connection closed');
   }
 }
